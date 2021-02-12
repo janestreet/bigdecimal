@@ -121,7 +121,8 @@ end = struct
         [@@deriving bin_io]
       end
 
-      include Binable.Of_binable_without_uuid [@alert "-legacy"]
+      include
+        Binable.Of_binable_without_uuid [@alert "-legacy"]
           (Bin_rep)
           (struct
             type nonrec t = t
