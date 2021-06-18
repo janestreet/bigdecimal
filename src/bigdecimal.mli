@@ -1,7 +1,7 @@
 (** A high-precision representation of decimal numbers as [mantissa * 10^exponent], where
     the mantissa is internally a [Bigint.t] and the exponent is an [int]. *)
 
-open Core_kernel
+open Core
 
 type t [@@deriving sexp, bin_io]
 
