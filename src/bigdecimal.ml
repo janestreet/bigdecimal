@@ -23,11 +23,19 @@ let pow_10_z =
       | Some x -> x
       | None ->
         let x = pow_10_z n in
-        tbl.(n) <- Some (pow_10_z n);
+        tbl.(n) <- Some x;
         x)
 ;;
 
 let pow_10 n = pow_10_z n |> Bigint.of_zarith_bigint
+
+let pow_10_bignum n =
+  if n >= 0
+  then pow_10 n |> Bignum.of_bigint
+  else (
+    let denom = pow_10 (abs n) |> Bignum.of_bigint in
+    Bignum.(one / denom))
+;;
 
 module T : sig
   (** This represents the decimal: mantissa * 10 ^ exponent. An invariant of the type is
@@ -215,6 +223,7 @@ end
 include T
 include Stable.V3
 
+let one = create ~mantissa:Bigint.one ~exponent:0
 let abs { mantissa; exponent } = create ~mantissa:(Bigint.abs mantissa) ~exponent
 let neg { mantissa; exponent } = create ~mantissa:(Bigint.neg mantissa) ~exponent
 let sign { mantissa; exponent = _ } = Bigint.sign mantissa
@@ -257,11 +266,7 @@ let of_bigint n = create ~mantissa:n ~exponent:0
 let of_int n = create ~mantissa:(Bigint.of_int n) ~exponent:0
 
 let to_bignum { mantissa; exponent } =
-  let pow_10 n =
-    let factor = pow_10 (Int.abs n) |> Bignum.of_bigint in
-    if n < 0 then Bignum.(one / factor) else factor
-  in
-  let factor = pow_10 exponent in
+  let factor = pow_10_bignum exponent in
   let mantissa = Bignum.of_bigint mantissa in
   Bignum.(mantissa * factor)
 ;;
@@ -457,7 +462,114 @@ let of_bignum_exn =
         create ~mantissa ~exponent:(-exponent))
 ;;
 
+let div ?(decimals_precision = 15) a b =
+  (* If a = m * 10^p and b = n * 10^q, then
+
+     a/b = u * 10^r, where
+
+     r = p - q, and
+     u = m / n.
+
+     We compute m/n using Bignum.round_decimal to [d] digits, where [d] =
+     [decimals_precision + r]. The reason is that the result is [u] shifted left by [r]
+     decimals, so to keep [decimals_precision] decimals after the decimal point, we
+     compute [m/n] to [decimals_precision + r] places. If [r < 0] then [d <
+     decimals_precision]: we compute [m/n] to fewer digits because we're going to
+     shift-right by [abs(r)] afterwards. *)
+  let result_exponent = a.exponent - b.exponent in
+  let result_mantissa =
+    let digits = decimals_precision + result_exponent in
+    Bignum.( / ) (Bignum.of_bigint a.mantissa) (Bignum.of_bigint b.mantissa)
+    |> Bignum.round_decimal ~dir:`Nearest ~digits
+    |> of_bignum_exn
+  in
+  scale_by result_mantissa ~power_of_ten:result_exponent
+;;
+
+let scale_int t n =
+  create ~mantissa:(Bigint.( * ) t.mantissa (Bigint.of_int n)) ~exponent:t.exponent
+;;
+
+let round_to_power_of_ten ?dir t ~power_of_ten =
+  if t.exponent >= power_of_ten
+  then t
+  else (
+    let mantissa =
+      let pow10 = pow_10_bignum (power_of_ten - t.exponent) in
+      let num = Bignum.of_bigint t.mantissa in
+      Bignum.( / ) num pow10 |> Bignum.round_as_bigint_exn ?dir
+    in
+    create ~mantissa ~exponent:power_of_ten)
+;;
+
+let log10_int_exact { mantissa; exponent } =
+  (* [mantissa] is either zero or an integer not divisible by 10. *)
+  if Bigint.equal mantissa Bigint.one then Some exponent else None
+;;
+
+let[@cold] raise__sqrt_of_negative_number t =
+  raise_s [%message "Bigdecimal.sqrt got negative argument" (t : t)]
+;;
+
+let two = of_int 2
+let is_even n = Int.(n % 2 = 0)
+
+let sqrt ?(decimals_precision = 15) t =
+  if Bigint.is_negative t.mantissa then raise__sqrt_of_negative_number t;
+  if is_zero t
+  then zero
+  else if Bigint.(t.mantissa = one) && is_even t.exponent
+  then
+    (* if t = 10^(2*k), then sqrt(t) = 10^k *)
+    create ~mantissa:t.mantissa ~exponent:(Int.( / ) t.exponent 2)
+  else (
+    (* Babylonian method for computing sqrt
+       (https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method)
+
+       To compute sqrt(a) to [d] decimal digits of precision:
+
+       x_0 = approximate_sqrt(a)
+
+       and repeat:
+       x_(n+1) = (x_n + (a / x_n)) / 2
+
+       until |x_(n+1) - x_n| < 10^-d
+
+       In order for the result to be accurate to [d] decimals, the division needs to be
+       accurate to [d + 1] decimals (addition is exact). *)
+    let precision = create ~mantissa:Bigint.one ~exponent:(Int.neg decimals_precision) in
+    let[@inline] ( / ) a b = div ~decimals_precision:(decimals_precision + 1) a b in
+    let x0 = ref zero in
+    let x1 = ref (Float.sqrt (to_float t) |> of_float_short_exn) in
+    let open Infix in
+    let too_far () =
+      let diff = abs (!x0 - !x1) in
+      compare diff precision >= 0
+    in
+    while too_far () do
+      x0 := !x1;
+      x1 := ((t / !x0) + !x0) / two
+    done;
+    round_to_power_of_ten ~dir:`Nearest !x1 ~power_of_ten:(Int.neg decimals_precision))
+;;
+
+let ( ** ) t pow =
+  (* Bigint.( ** ) raises a reasonable-looking exception if the power is negative *)
+  create
+    ~mantissa:(Bigint.( ** ) t.mantissa (Bigint.of_int pow))
+    ~exponent:(Int.( * ) t.exponent pow)
+;;
+
 let of_bignum x = Or_error.try_with (fun () -> of_bignum_exn x)
+let is_integral t = t.exponent >= 0
+
+let to_bigint_exact_exn t =
+  if not (is_integral t)
+  then raise_s [%message "to_bigint_exact_exn: not an integer" (t : t)];
+  Bigint.( * ) t.mantissa (Bigint.( ** ) (Bigint.of_int 10) (Bigint.of_int t.exponent))
+;;
+
+let to_bigint_exact t = Option.try_with (fun () -> to_bigint_exact_exn t)
 
 include Infix
 

@@ -6,6 +6,7 @@ open Core
 type t [@@deriving sexp, bin_io]
 
 val zero : t
+val one : t
 
 include Comparable.S with type t := t
 include Hashable.S with type t := t
@@ -13,7 +14,24 @@ include Hashable.S with type t := t
 val ( + ) : t -> t -> t
 val ( - ) : t -> t -> t
 val ( * ) : t -> t -> t
+
+(** [div ?decimals_precision a b] = a/b, to [decimals_precision] decimals of precision,
+    rounding to the nearest 10^(-decimals_precision).
+
+    [decimals_precision] defaults to 15. *)
+val div : ?decimals_precision:int -> t -> t -> t
+
+(** Computes the square root to [decimals_precision] decimals of precision,
+    rounding to the nearest 10^(-decimals_precision).
+
+    [decimals_precision] defaults to 15. *)
+val sqrt : ?decimals_precision:int -> t -> t
+
+(** [t ** p] computes t raised to the pth power. [p] must be nonnegative! *)
+val ( ** ) : t -> int -> t
+
 val scale_by : t -> power_of_ten:int -> t
+val scale_int : t -> int -> t
 val mantissa : t -> Bigint.t
 val exponent : t -> int
 val of_int : int -> t
@@ -35,11 +53,26 @@ val to_string_no_sn : t -> string
 *)
 val to_string_no_sn_grouping : ?sep:char -> t -> string
 
+(** [true] if and only if [t] is an integer. *)
+val is_integral : t -> bool
+
 (** Default rounding direction is [`Nearest]. *)
 val round : ?dir:[ `Down | `Up | `Nearest | `Zero ] -> t -> t
 
 (** Default rounding direction is [`Nearest]. *)
 val round_to_bigint : ?dir:[ `Down | `Up | `Nearest | `Zero ] -> t -> Bigint.t
+
+val round_to_power_of_ten
+  :  ?dir:[ `Down | `Up | `Nearest | `Zero ]
+  -> t
+  -> power_of_ten:int
+  -> t
+
+(** Returns [None] iff [is_integral] returns false. *)
+val to_bigint_exact : t -> Bigint.t option
+
+(** Raises iff [is_integral] returns false. *)
+val to_bigint_exact_exn : t -> Bigint.t
 
 (** Returns [t] as an exact integer, if [t] is integral and fits within [int]; None
     otherwise. *)
@@ -61,6 +94,10 @@ val abs : t -> t
 val neg : t -> t
 val sign : t -> Sign.t
 val is_zero : t -> bool
+
+(** Calculate the log in base 10. If it is not representable as an integer, return
+    [Option.None] *)
+val log10_int_exact : t -> int option
 
 (** Produces a decimal representation that, when converted back via [to_float], produces
     the original floating point number. It doesn't, however, pick the decimal that is
