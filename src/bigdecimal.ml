@@ -1,5 +1,6 @@
 open Core
 open Int.Replace_polymorphic_compare
+open Stable_witness.Export
 module Z = Zarith.Z
 
 let z_ten = Bigint.of_int 10 |> Bigint.to_zarith_bigint
@@ -60,8 +61,13 @@ module T : sig
     -> 'a
 
   module Stable : sig
-    module V2 : Stable_without_comparator with type t = t
-    module V3 : Stable_without_comparator with type t = t
+    module V2 : sig
+      type nonrec t = t [@@deriving bin_io, compare, equal, sexp, stable_witness]
+    end
+
+    module V3 : sig
+      type nonrec t = t [@@deriving bin_io, compare, equal, sexp, stable_witness]
+    end
   end
 end = struct
   (* Invariant: [mantissa] is either zero or an integer not divisible by 10. *)
@@ -100,16 +106,19 @@ end = struct
           Bigint.compare mantissa_a mantissa_b))
   ;;
 
+  let equal = [%compare.equal: t]
+
   module Stable = struct
     module V2 = struct
       type nonrec t = t =
         { mantissa : Bigint.Stable.V1.t
         ; exponent : int
         }
-      [@@deriving sexp]
+      [@@deriving sexp, stable_witness]
 
       (* derived compare would be incorrect here *)
       let compare = compare
+      let equal = equal
 
       (** [Bigint] does extra allocation in its binary serialization. Do a simpler version
           of what Bignum does and [bin_io] the mantissa as an int, if it fits in an int,
@@ -161,10 +170,11 @@ end = struct
         { mantissa : Bigint.Stable.V2.t
         ; exponent : int
         }
-      [@@deriving bin_io, sexp]
+      [@@deriving bin_io, sexp, stable_witness]
 
       (* derived compare would be incorrect here *)
       let compare = compare
+      let equal = equal
     end
 
     let%expect_test "test bin-io digest" =

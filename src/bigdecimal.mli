@@ -124,6 +124,15 @@ val of_bignum : Bignum.t -> t Or_error.t
 val of_bignum_exn : Bignum.t -> t
 
 module Stable : sig
-  module V2 : Stable_without_comparator with type t = t
-  module V3 : Stable_without_comparator with type t = t
+  module V2 : sig
+    type nonrec t = t [@@deriving equal]
+
+    include Stable_without_comparator_with_witness with type t := t
+  end
+
+  module V3 : sig
+    type nonrec t = t [@@deriving equal]
+
+    include Stable_without_comparator_with_witness with type t := t
+  end
 end
