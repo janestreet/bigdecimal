@@ -62,11 +62,27 @@ module T : sig
 
   module Stable : sig
     module V2 : sig
-      type nonrec t = t [@@deriving bin_io, compare, equal, sexp, stable_witness]
+      type nonrec t = t [@@deriving bin_io, compare, equal, stable_witness]
+
+      module Structural_sexp : sig
+        type nonrec t = t [@@deriving sexp]
+      end
     end
 
     module V3 : sig
-      type nonrec t = t [@@deriving bin_io, compare, equal, sexp, stable_witness]
+      type nonrec t = t [@@deriving bin_io, compare, equal, stable_witness]
+
+      module Structural_sexp : sig
+        type nonrec t = t [@@deriving sexp]
+      end
+    end
+
+    module V4 : sig
+      type nonrec t = t [@@deriving bin_io, compare, equal, stable_witness]
+
+      module Structural_sexp : sig
+        type nonrec t = t [@@deriving sexp]
+      end
     end
   end
 end = struct
@@ -114,11 +130,19 @@ end = struct
         { mantissa : Bigint.Stable.V1.t
         ; exponent : int
         }
-      [@@deriving sexp, stable_witness]
+      [@@deriving stable_witness]
 
       (* derived compare would be incorrect here *)
       let compare = compare
       let equal = equal
+
+      module Structural_sexp = struct
+        type nonrec t = t =
+          { mantissa : Bigint.Stable.V1.t
+          ; exponent : int
+          }
+        [@@deriving sexp]
+      end
 
       (** [Bigint] does extra allocation in its binary serialization. Do a simpler version
           of what Bignum does and [bin_io] the mantissa as an int, if it fits in an int,
@@ -170,20 +194,24 @@ end = struct
         { mantissa : Bigint.Stable.V2.t
         ; exponent : int
         }
-      [@@deriving bin_io, sexp, stable_witness]
+      [@@deriving bin_io, stable_witness]
 
       (* derived compare would be incorrect here *)
       let compare = compare
       let equal = equal
+
+      module Structural_sexp = struct
+        type nonrec t = t =
+          { mantissa : Bigint.Stable.V2.t
+          ; exponent : int
+          }
+        [@@deriving sexp]
+      end
     end
 
-    let%expect_test "test bin-io digest" =
-      let open Expect_test_helpers_core in
-      print_and_check_stable_type [%here] (module V2) [];
-      [%expect {| (bin_shape_digest 63dd1de06f1a4e923a03de49c676df55) |}];
-      print_and_check_stable_type [%here] (module V3) [];
-      [%expect {| (bin_shape_digest 4382b358d87f1333d0277d5af9cfa383) |}]
-    ;;
+    (* The only difference between V3 and V4 is [Sexpable.S], and we add that later in the
+       file. *)
+    module V4 = V3
   end
 
   let zero = { mantissa = Bigint.zero; exponent = 0 }
@@ -231,7 +259,7 @@ end = struct
 end
 
 include T
-include Stable.V3
+include Stable.V4
 
 let one = create ~mantissa:Bigint.one ~exponent:0
 let abs { mantissa; exponent } = create ~mantissa:(Bigint.abs mantissa) ~exponent
@@ -518,7 +546,7 @@ let log10_int_exact { mantissa; exponent } =
 ;;
 
 let[@cold] raise__sqrt_of_negative_number t =
-  raise_s [%message "Bigdecimal.sqrt got negative argument" (t : t)]
+  raise_s [%message "Bigdecimal.sqrt got negative argument" (t : Structural_sexp.t)]
 ;;
 
 let two = of_int 2
@@ -575,7 +603,7 @@ let is_integral t = t.exponent >= 0
 
 let to_bigint_exact_exn t =
   if not (is_integral t)
-  then raise_s [%message "to_bigint_exact_exn: not an integer" (t : t)];
+  then raise_s [%message "to_bigint_exact_exn: not an integer" (t : Structural_sexp.t)];
   Bigint.( * ) t.mantissa (Bigint.( ** ) (Bigint.of_int 10) (Bigint.of_int t.exponent))
 ;;
 
@@ -583,12 +611,14 @@ let to_bigint_exact t = Option.try_with (fun () -> to_bigint_exact_exn t)
 
 include Infix
 
-include Sexpable.Of_stringable (struct
+module String_sexp = Sexpable.Of_stringable (struct
     type nonrec t = t
 
     let of_string = of_string
     let to_string = to_string_no_sn
   end)
+
+include String_sexp
 
 include Comparable.Make (struct
     type nonrec t = t [@@deriving sexp]
@@ -599,3 +629,20 @@ include Comparable.Make (struct
 include Hashable.Make (struct
     type nonrec t = t [@@deriving hash, sexp, compare]
   end)
+
+module Stable = struct
+  module V2 = struct
+    include Stable.V2
+    include Stable.V2.Structural_sexp
+  end
+
+  module V3 = struct
+    include Stable.V3
+    include Stable.V3.Structural_sexp
+  end
+
+  module V4 = struct
+    include Stable.V4
+    include String_sexp
+  end
+end

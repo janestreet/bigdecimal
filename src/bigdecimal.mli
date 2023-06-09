@@ -135,4 +135,13 @@ module Stable : sig
 
     include Stable_without_comparator_with_witness with type t := t
   end
+
+  (** The [V4] bin_io representation is the same as that of [V3], but its sexp
+      representation is the same as that of the unstable type, i.e. a human-readable,
+      decimal string. *)
+  module V4 : sig
+    type nonrec t = t [@@deriving equal]
+
+    include Stable_without_comparator_with_witness with type t := t
+  end
 end

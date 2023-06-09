@@ -1,3 +1,2 @@
 (library (name bigdecimal) (public_name bigdecimal)
- (libraries bignum core expect_test_helpers_core zarith)
- (preprocess (pps ppx_jane)))
+ (libraries bignum core zarith) (preprocess (pps ppx_jane)))

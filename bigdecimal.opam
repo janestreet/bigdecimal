@@ -13,10 +13,9 @@ depends: [
   "ocaml" {>= "4.14.0"}
   "bignum"
   "core"
-  "expect_test_helpers_core"
   "ppx_jane"
-  "dune"                     {>= "2.0.0"}
-  "zarith"                   {>= "1.11"}
+  "dune"     {>= "2.0.0"}
+  "zarith"   {>= "1.11"}
 ]
 available: arch != "arm32" & arch != "x86_32"
 synopsis: "Arbitrary-precision decimal based on Zarith"
