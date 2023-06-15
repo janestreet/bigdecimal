@@ -57,13 +57,13 @@ val to_string_no_sn_grouping : ?sep:char -> t -> string
 val is_integral : t -> bool
 
 (** Default rounding direction is [`Nearest]. *)
-val round : ?dir:[ `Down | `Up | `Nearest | `Zero ] -> t -> t
+val round : ?dir:[< `Down | `Up | `Nearest | `Zero | `Bankers ] -> t -> t
 
 (** Default rounding direction is [`Nearest]. *)
-val round_to_bigint : ?dir:[ `Down | `Up | `Nearest | `Zero ] -> t -> Bigint.t
+val round_to_bigint : ?dir:[< `Down | `Up | `Nearest | `Zero | `Bankers ] -> t -> Bigint.t
 
 val round_to_power_of_ten
-  :  ?dir:[ `Down | `Up | `Nearest | `Zero ]
+  :  ?dir:[< `Down | `Up | `Nearest | `Zero | `Bankers ]
   -> t
   -> power_of_ten:int
   -> t
