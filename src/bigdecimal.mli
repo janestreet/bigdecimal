@@ -125,13 +125,13 @@ val of_bignum_exn : Bignum.t -> t
 
 module Stable : sig
   module V2 : sig
-    type nonrec t = t [@@deriving equal]
+    type nonrec t = t [@@deriving equal, hash]
 
     include Stable_without_comparator_with_witness with type t := t
   end
 
   module V3 : sig
-    type nonrec t = t [@@deriving equal]
+    type nonrec t = t [@@deriving equal, hash]
 
     include Stable_without_comparator_with_witness with type t := t
   end
@@ -140,7 +140,7 @@ module Stable : sig
       representation is the same as that of the unstable type, i.e. a human-readable,
       decimal string. *)
   module V4 : sig
-    type nonrec t = t [@@deriving equal]
+    type nonrec t = t [@@deriving equal, hash]
 
     include Stable_without_comparator_with_witness with type t := t
   end

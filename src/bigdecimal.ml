@@ -62,7 +62,7 @@ module T : sig
 
   module Stable : sig
     module V2 : sig
-      type nonrec t = t [@@deriving bin_io, compare, equal, stable_witness]
+      type nonrec t = t [@@deriving bin_io, compare, equal, hash, stable_witness]
 
       module Structural_sexp : sig
         type nonrec t = t [@@deriving sexp]
@@ -70,7 +70,7 @@ module T : sig
     end
 
     module V3 : sig
-      type nonrec t = t [@@deriving bin_io, compare, equal, stable_witness]
+      type nonrec t = t [@@deriving bin_io, compare, equal, hash, stable_witness]
 
       module Structural_sexp : sig
         type nonrec t = t [@@deriving sexp]
@@ -78,7 +78,7 @@ module T : sig
     end
 
     module V4 : sig
-      type nonrec t = t [@@deriving bin_io, compare, equal, stable_witness]
+      type nonrec t = t [@@deriving bin_io, compare, equal, hash, stable_witness]
 
       module Structural_sexp : sig
         type nonrec t = t [@@deriving sexp]
@@ -135,6 +135,8 @@ end = struct
       (* derived compare would be incorrect here *)
       let compare = compare
       let equal = equal
+      let hash = hash
+      let hash_fold_t = hash_fold_t
 
       module Structural_sexp = struct
         type nonrec t = t =
@@ -199,6 +201,8 @@ end = struct
       (* derived compare would be incorrect here *)
       let compare = compare
       let equal = equal
+      let hash = hash
+      let hash_fold_t = hash_fold_t
 
       module Structural_sexp = struct
         type nonrec t = t =
