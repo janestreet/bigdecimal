@@ -48,7 +48,7 @@ module T : sig
     { mantissa : Bigint.t
     ; exponent : int
     }
-  [@@deriving fields, hash, compare]
+  [@@deriving fields ~getters, hash, compare]
 
   val zero : t
   val scale_by : t -> power_of_ten:int -> t
@@ -91,7 +91,7 @@ end = struct
     { mantissa : Bigint.t
     ; exponent : int
     }
-  [@@deriving fields, hash]
+  [@@deriving fields ~getters, hash]
 
   (* derived compare would be incorrect here *)
 
