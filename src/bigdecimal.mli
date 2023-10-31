@@ -140,7 +140,7 @@ module Stable : sig
       representation is the same as that of the unstable type, i.e. a human-readable,
       decimal string. *)
   module V4 : sig
-    type nonrec t = t [@@deriving equal, hash]
+    type nonrec t = t [@@deriving equal, hash, sexp_grammar]
 
     include Stable_without_comparator_with_witness with type t := t
   end
