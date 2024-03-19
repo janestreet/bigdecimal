@@ -16,10 +16,17 @@ val ( - ) : t -> t -> t
 val ( * ) : t -> t -> t
 
 (** [div ?decimals_precision a b] = a/b, to [decimals_precision] decimals of precision,
-    rounding to the nearest 10^(-decimals_precision).
+    rounding to the nearest 10^(-decimals_precision) with the specified rounding dir.
 
-    [decimals_precision] defaults to 15. *)
-val div : ?decimals_precision:int -> t -> t -> t
+    [decimals_precision] defaults to 15.
+    [rounding_dir] defaults to `Nearest.
+*)
+val div
+  :  ?decimals_precision:int
+  -> ?rounding_dir:[< `Down | `Up | `Nearest | `Zero | `Bankers ]
+  -> t
+  -> t
+  -> t
 
 (** Computes the square root to [decimals_precision] decimals of precision,
     rounding to the nearest 10^(-decimals_precision).

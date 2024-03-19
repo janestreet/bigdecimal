@@ -504,7 +504,14 @@ let of_bignum_exn =
         create ~mantissa ~exponent:(-exponent))
 ;;
 
-let div ?(decimals_precision = 15) a b =
+let div ?(decimals_precision = 15) ?rounding_dir a b =
+  let rounding_dir =
+    (* We do this so that the mli doesn't need to have the [> `Nearest] restriction added
+       to it. *)
+    Option.value
+      (rounding_dir :> [ `Zero | `Down | `Up | `Nearest | `Bankers ] option)
+      ~default:`Nearest
+  in
   (* If a = m * 10^p and b = n * 10^q, then
 
      a/b = u * 10^r, where
@@ -522,7 +529,7 @@ let div ?(decimals_precision = 15) a b =
   let result_mantissa =
     let digits = decimals_precision + result_exponent in
     Bignum.( / ) (Bignum.of_bigint a.mantissa) (Bignum.of_bigint b.mantissa)
-    |> Bignum.round_decimal ~dir:`Nearest ~digits
+    |> Bignum.round_decimal ~dir:rounding_dir ~digits
     |> of_bignum_exn
   in
   scale_by result_mantissa ~power_of_ten:result_exponent
