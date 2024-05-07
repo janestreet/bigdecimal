@@ -1,3 +1,10 @@
+## Release v0.17.0
+
+- broke dependency on expect_test_helpers_core
+- added rounding dir parameter
+- added support for bankers rounding
+- added new human readable sexp format representation
+
 ## Release v0.16.0
 
 - Add new functions and constants to `Bigdecimal`:
