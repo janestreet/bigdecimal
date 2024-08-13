@@ -623,23 +623,23 @@ let to_bigint_exact t = Option.try_with (fun () -> to_bigint_exact_exn t)
 include Infix
 
 module String_sexp = Sexpable.Of_stringable (struct
-  type nonrec t = t
+    type nonrec t = t
 
-  let of_string = of_string
-  let to_string = to_string_no_sn
-end)
+    let of_string = of_string
+    let to_string = to_string_no_sn
+  end)
 
 include String_sexp
 
 include Comparable.Make (struct
-  type nonrec t = t [@@deriving sexp]
+    type nonrec t = t [@@deriving sexp]
 
-  let compare = compare
-end)
+    let compare = compare
+  end)
 
 include Hashable.Make (struct
-  type nonrec t = t [@@deriving hash, sexp, compare]
-end)
+    type nonrec t = t [@@deriving hash, sexp, compare]
+  end)
 
 module Stable = struct
   module V2 = struct

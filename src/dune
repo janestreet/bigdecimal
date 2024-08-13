@@ -1,6 +1,7 @@
 (library
  (name bigdecimal)
  (public_name bigdecimal)
- (libraries bignum core zarith)
+ (libraries bignum bignum.bigint core ppx_stable_witness.stable_witness
+   zarith)
  (preprocess
   (pps ppx_jane)))

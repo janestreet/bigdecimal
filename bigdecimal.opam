@@ -14,8 +14,9 @@ depends: [
   "bignum"
   "core"
   "ppx_jane"
-  "dune"     {>= "3.11.0"}
-  "zarith"   {>= "1.11"}
+  "ppx_stable_witness"
+  "dune"               {>= "3.11.0"}
+  "zarith"             {>= "1.11"}
 ]
 available: arch != "arm32" & arch != "x86_32"
 synopsis: "Arbitrary-precision decimal based on Zarith"
