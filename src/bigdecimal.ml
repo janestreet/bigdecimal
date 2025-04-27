@@ -42,21 +42,20 @@ module T : sig
   (** This represents the decimal: mantissa * 10 ^ exponent. An invariant of the type is
       that the mantissa is either zero or an integer not divisible by 10. Also, it's
       guaranteed that any two distinct decimal numbers will have distinct representations,
-      which requires in addition that zero is always expressed with an exponent of
-      zero. *)
+      which requires in addition that zero is always expressed with an exponent of zero. *)
   type t = private
     { mantissa : Bigint.t
     ; exponent : int
     }
-  [@@deriving fields ~getters, hash, compare]
+  [@@deriving fields ~getters, hash, compare ~localize, typerep]
 
   val zero : t
   val scale_by : t -> power_of_ten:int -> t
   val create : mantissa:Bigint.t -> exponent:int -> t
 
   val scaling_to_least_common_exponent
-    :  t
-    -> t
+    :  t @ local
+    -> t @ local
     -> f:(lce:int -> mantissa_a:Bigint.t -> mantissa_b:Bigint.t -> 'a)
     -> 'a
 
@@ -91,7 +90,7 @@ end = struct
     { mantissa : Bigint.t
     ; exponent : int
     }
-  [@@deriving fields ~getters, hash]
+  [@@deriving fields ~getters, hash, typerep]
 
   (* derived compare would be incorrect here *)
 
@@ -105,7 +104,7 @@ end = struct
 
   let is_zero t = Bigint.(t.mantissa = zero)
 
-  let compare x y =
+  let%template compare (x @ m) (y @ m) =
     if x.exponent = y.exponent
     then Bigint.compare x.mantissa y.mantissa
     else if is_zero x
@@ -120,6 +119,7 @@ end = struct
       else
         scaling_to_least_common_exponent x y ~f:(fun ~lce:_ ~mantissa_a ~mantissa_b ->
           Bigint.compare mantissa_a mantissa_b))
+  [@@mode m = (global, local)]
   ;;
 
   let equal = [%compare.equal: t]
@@ -375,7 +375,7 @@ let of_string s =
 ;;
 
 let to_string_no_sn ({ mantissa; exponent } as t) =
-  if [%compare.equal: t] t zero
+  if [%compare_local.equal: t] t zero
   then "0"
   else (
     let is_neg, mantissa =
@@ -444,11 +444,11 @@ let to_int_exn t =
   if is_zero t
   then 0
   else if Int.is_negative t.exponent
-  then failwithf !"to_int_exn not integral: %{#no_sn}" t ()
+  then failwith ("to_int_exn not integral: " ^ to_string_no_sn t) [@nontail]
   else (
     (* Use [Bigint.( * )] since [Int.( * )] doesn't raise on overflow *)
     try Bigint.( * ) t.mantissa (pow_10 t.exponent) |> Bigint.to_int_exn with
-    | _ -> failwithf !"to_int_exn overflow: %{#no_sn}" t ())
+    | _ -> failwith ("to_int_exn overflow: " ^ to_string_no_sn t) [@nontail])
 ;;
 
 let to_int t =

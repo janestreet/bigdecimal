@@ -3,7 +3,7 @@
 
 open Core
 
-type t [@@deriving sexp, bin_io]
+type t : value mod contended portable [@@deriving sexp, bin_io, typerep]
 
 val zero : t
 val one : t
@@ -18,9 +18,7 @@ val ( * ) : t -> t -> t
 (** [div ?decimals_precision a b] = a/b, to [decimals_precision] decimals of precision,
     rounding to the nearest 10^(-decimals_precision) with the specified rounding dir.
 
-    [decimals_precision] defaults to 15.
-    [rounding_dir] defaults to `Nearest.
-*)
+    [decimals_precision] defaults to 15. [rounding_dir] defaults to `Nearest. *)
 val div
   :  ?decimals_precision:int
   -> ?rounding_dir:[< `Down | `Up | `Nearest | `Zero | `Bankers ]
@@ -28,8 +26,8 @@ val div
   -> t
   -> t
 
-(** Computes the square root to [decimals_precision] decimals of precision,
-    rounding to the nearest 10^(-decimals_precision).
+(** Computes the square root to [decimals_precision] decimals of precision, rounding to
+    the nearest 10^(-decimals_precision).
 
     [decimals_precision] defaults to 15. *)
 val sqrt : ?decimals_precision:int -> t -> t
@@ -56,8 +54,7 @@ val of_string : string -> t
 val to_string_no_sn : t -> string
 
 (** Like [to_string_no_sn] but adds separators to group digits in the integral part into
-    triplets, e.g. [1,234,567.890123]. [sep] is comma by default.
-*)
+    triplets, e.g. [1,234,567.890123]. [sep] is comma by default. *)
 val to_string_no_sn_grouping : ?sep:char -> t -> string
 
 (** [true] if and only if [t] is an integer. *)
@@ -86,12 +83,11 @@ val to_bigint_exact_exn : t -> Bigint.t
 val to_int : t -> int option
 
 (** An exception-throwing version of [to_int]. *)
-val to_int_exn : t -> int
+val to_int_exn : t @ local -> int
 
 (** {2 Floating-point conversions}
 
-    [to_float] and [of_float] round-trip when starting with a float.
-*)
+    [to_float] and [of_float] round-trip when starting with a float. *)
 
 (** [to_float] is lossy, since not all decimals can be represented as floats. The result
     is the floating point number that is closest to the provided decimal. *)
@@ -111,20 +107,19 @@ val log10_int_exact : t -> int option
     exactly equal to the float, even though this exists.
 
     Instead, it aims to minimize the length of the generated decimal, subject to the
-    roundtrip property described above.  See [Float.to_string] for details on the
-    semantics of the value chosen.
+    roundtrip property described above. See [Float.to_string] for details on the semantics
+    of the value chosen.
 
     An error is returned in the case that the float is not representable as a decimal,
-    e.g., NaN and infinity.
-*)
+    e.g., NaN and infinity. *)
 val of_float_short : float -> t Or_error.t
 
-(** An exception-throwing version of [of_float_short]  *)
+(** An exception-throwing version of [of_float_short] *)
 val of_float_short_exn : float -> t
 
-(** Produces a decimal representation that is exactly equal to the provided bignum, or
-    an error if the bignum is not exactly representable as a decimal: e.g., infinity
-    or [1/3]. *)
+(** Produces a decimal representation that is exactly equal to the provided bignum, or an
+    error if the bignum is not exactly representable as a decimal: e.g., infinity or
+    [1/3]. *)
 val of_bignum : Bignum.t -> t Or_error.t
 
 (** An exception-throwing version of [of_bignum]. *)
