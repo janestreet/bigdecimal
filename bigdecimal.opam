@@ -15,7 +15,7 @@ depends: [
   "core"
   "ppx_jane"
   "ppx_stable_witness"
-  "dune"               {>= "3.11.0"}
+  "dune"               {>= "3.17.0"}
   "zarith"             {>= "1.11"}
 ]
 available: arch != "arm32" & arch != "x86_32"
