@@ -8,7 +8,7 @@ type t [@@deriving sexp, bin_io, typerep]
 val zero : t
 val one : t
 
-include Comparable.S with type t := t
+include Comparable.S [@modality portable] with type t := t
 include Hashable.S with type t := t
 
 val ( + ) : t -> t -> t

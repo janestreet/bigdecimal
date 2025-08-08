@@ -3,31 +3,7 @@ open Int.Replace_polymorphic_compare
 open Stable_witness.Export
 module Z = Zarith.Z
 
-let z_ten = Bigint.of_int 10 |> Bigint.to_zarith_bigint
-
-let pow_10_z =
-  (* When performing [Bignum.t -> Bigdecimal.t] conversion, we need to compute the value
-     [10**(log2 bignum)].  Meanwhile, [log2 (max finite float)] is approximately 1024, so
-     this seems like a reasonable guess for the upper bound for computations where
-     performance may matter.  Add 17% tip, and you end up with 1200.  On the other hand,
-     1200 words sounds like a sane enough amount of memory for a library to preallocate
-     statically.  If this table fills up, it will take 0.3 MB, which is also not crazy for
-     something actually being used. *)
-  let max_memoized_pow = 1200 in
-  let tbl = Array.create ~len:(max_memoized_pow + 1) None in
-  let pow_10_z n = Z.pow z_ten n in
-  fun n ->
-    if n > max_memoized_pow
-    then pow_10_z n
-    else (
-      match tbl.(n) with
-      | Some x -> x
-      | None ->
-        let x = pow_10_z n in
-        tbl.(n) <- Some x;
-        x)
-;;
-
+let pow_10_z = Bignum.For_bigdecimal.pow_10
 let pow_10 n = pow_10_z n |> Bigint.of_zarith_bigint
 
 let pow_10_bignum n =
@@ -165,7 +141,7 @@ end = struct
       end
 
       include
-        Binable.Of_binable_without_uuid [@alert "-legacy"]
+        Binable.Of_binable_without_uuid [@alert "-legacy"] [@modality portable]
           (Bin_rep)
           (struct
             type nonrec t = t
@@ -622,7 +598,7 @@ let to_bigint_exact t = Option.try_with (fun () -> to_bigint_exact_exn t)
 
 include Infix
 
-module String_sexp = Sexpable.Of_stringable (struct
+module String_sexp = Sexpable.Of_stringable [@modality portable] (struct
     type nonrec t = t
 
     let of_string = of_string
@@ -631,13 +607,13 @@ module String_sexp = Sexpable.Of_stringable (struct
 
 include String_sexp
 
-include Comparable.Make (struct
+include Comparable.Make [@modality portable] (struct
     type nonrec t = t [@@deriving sexp]
 
     let compare = compare
   end)
 
-include Hashable.Make (struct
+include Hashable.Make [@modality portable] (struct
     type nonrec t = t [@@deriving hash, sexp, compare]
   end)
 
