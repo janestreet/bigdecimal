@@ -1,3 +1,5 @@
+@@ portable
+
 (** A high-precision representation of decimal numbers as [mantissa * 10^exponent], where
     the mantissa is internally a [Bigint.t] and the exponent is an [int]. *)
 
@@ -8,7 +10,7 @@ type t : value mod contended portable [@@deriving sexp, bin_io, typerep]
 val zero : t
 val one : t
 
-include Comparable.S with type t := t
+include Comparable.S [@modality portable] with type t := t
 include Hashable.S with type t := t
 
 val ( + ) : t -> t -> t
