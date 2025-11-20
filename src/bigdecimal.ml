@@ -212,15 +212,17 @@ end = struct
           let r =
             (* Things would still work if instead we did
 
-               {[ let r = go ~mantissa ~exponent (n * 2) ]}
+               {[
+                 let r = go ~mantissa ~exponent (n * 2)
+               ]}
 
                But since we already went through the hassle of computing [div], why not
                proceed with smaller numbers, saving some work? *)
             go ~mantissa:div ~exponent:(exponent + n) (n * 2)
           in
           (* At this point the highest power of 10 by which mantissa may be divisible is
-             [n * 2 - 1].  So it is sufficient to test again whether it is still divisible
-             by [10**n] to bring that number down to [n - 1] or less.  *)
+             [n * 2 - 1]. So it is sufficient to test again whether it is still divisible
+             by [10**n] to bring that number down to [n - 1] or less. *)
           let mantissa, exponent = r in
           let div, remainder = Z.div_rem mantissa pow_10_z_n in
           if Z.(equal remainder zero) then div, exponent + n else r)
@@ -290,8 +292,10 @@ let to_bignum { mantissa; exponent } =
 ;;
 
 (* Determines the number of digits after the period, returning None if the part after the
-   decimal isn't a simple integer, e.g., doesn't match the pattern {v [_1-9]* v}.  This is
-   specifically to catch the case where the part after the decimal starts with a ['-'].
+   decimal isn't a simple integer, e.g., doesn't match the pattern
+   {v [_1-9]* v}
+   . This is specifically to catch the case where the part after the decimal starts with a
+   ['-'].
 *)
 let num_decimal_digits_and_mantissa s =
   let not_underscore = function
@@ -313,7 +317,7 @@ let num_decimal_digits_and_mantissa s =
 
 let of_string_base10 s = Bigint.of_zarith_bigint (Z.of_string_base 10 s)
 
-(* [of_string_without_exponent] accepts the following formats.
+(*=[of_string_without_exponent] accepts the following formats.
    - (-|+)?[0-9][0-9_]*.[0-9_]*
    - (-|+)?.[0-9][0-9_]*
 *)
@@ -322,8 +326,8 @@ let of_string_without_exponent s =
     raise_s [%message "Can't be parsed as Bigdecimal" ~_:(s : string)]
   in
   (* Explicitly disallow strings without any digits as zarith currently accepts [""] and
-     ["-"] as zero. That is: [Bigint.(of_string "" = zero) && Bigint.(of_string "-" =
-     zero)]. *)
+     ["-"] as zero. That is:
+     [Bigint.(of_string "" = zero) && Bigint.(of_string "-" = zero)]. *)
   if not (String.exists s ~f:Char.is_digit) then unparseable ();
   match num_decimal_digits_and_mantissa s with
   | None -> unparseable ()
@@ -437,7 +441,7 @@ let of_float_short_exn x = Float.to_string x |> of_string
 let of_float_short x = Or_error.try_with (fun () -> of_float_short_exn x)
 
 let power_of_ten_which_is_a_multiple_of x =
-  (* This function returns [Some (z, 10**z) ] iff
+  (*=This function returns [Some (z, 10**z) ] iff
      {[
        2**k * 5**n = x
      ]}
@@ -492,14 +496,13 @@ let div ?(decimals_precision = 15) ?rounding_dir a b =
 
      a/b = u * 10^r, where
 
-     r = p - q, and
-     u = m / n.
+     r = p - q, and u = m / n.
 
      We compute m/n using Bignum.round_decimal to [d] digits, where [d] =
      [decimals_precision + r]. The reason is that the result is [u] shifted left by [r]
      decimals, so to keep [decimals_precision] decimals after the decimal point, we
-     compute [m/n] to [decimals_precision + r] places. If [r < 0] then [d <
-     decimals_precision]: we compute [m/n] to fewer digits because we're going to
+     compute [m/n] to [decimals_precision + r] places. If [r < 0] then
+     [d < decimals_precision]: we compute [m/n] to fewer digits because we're going to
      shift-right by [abs(r)] afterwards. *)
   let result_exponent = a.exponent - b.exponent in
   let result_mantissa =
@@ -548,7 +551,7 @@ let sqrt ?(decimals_precision = 15) t =
     (* if t = 10^(2*k), then sqrt(t) = 10^k *)
     create ~mantissa:t.mantissa ~exponent:(Int.( / ) t.exponent 2)
   else (
-    (* Babylonian method for computing sqrt
+    (*=Babylonian method for computing sqrt
        (https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method)
 
        To compute sqrt(a) to [d] decimal digits of precision:
