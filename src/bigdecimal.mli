@@ -39,8 +39,8 @@ val ( ** ) : t -> int -> t
 
 val scale_by : t -> power_of_ten:int -> t
 val scale_int : t -> int -> t
-val mantissa : t -> Bigint.t
-val exponent : t -> int
+val mantissa : local_ t -> Bigint.t
+val exponent : local_ t -> int
 val of_int : int -> t
 val of_bigint : Bigint.t -> t
 

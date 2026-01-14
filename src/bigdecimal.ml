@@ -23,11 +23,13 @@ module T : sig @@ portable
     { mantissa : Bigint.t
     ; exponent : int
     }
-  [@@deriving fields ~getters, hash, compare ~localize, typerep]
+  [@@deriving hash, compare ~localize, typerep]
 
   val zero : t
   val scale_by : t -> power_of_ten:int -> t
   val create : mantissa:Bigint.t -> exponent:int -> t
+  val mantissa : local_ t -> Bigint.t
+  val exponent : local_ t -> int
 
   val scaling_to_least_common_exponent
     :  t @ local
@@ -66,7 +68,10 @@ end = struct
     { mantissa : Bigint.t
     ; exponent : int
     }
-  [@@deriving fields ~getters, hash, typerep]
+  [@@deriving hash, typerep]
+
+  let mantissa (local_ t) : Bigint.t = t.mantissa
+  let exponent (local_ t) : int = t.exponent
 
   (* derived compare would be incorrect here *)
 
@@ -355,7 +360,7 @@ let of_string s =
 ;;
 
 let to_string_no_sn ({ mantissa; exponent } as t) =
-  if [%compare_local.equal: t] t zero
+  if ([%compare.equal: t] [@mode local]) t zero
   then "0"
   else (
     let is_neg, mantissa =
